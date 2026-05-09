@@ -22,7 +22,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 # Configuration
 $serviceName = "llama-server"
 $logDir = Join-Path $currentScriptDir "logs"
-$logFilePath = Join-Path $logDir "llama-service.out.log"
+$logFilePath = Join-Path $logDir "llama-service.err.log"
 $iconFilePath = Join-Path $currentScriptDir "icon.ico"
 $logSnapshotDir = Join-Path ([System.IO.Path]::GetTempPath()) "llama-server-tray"
 
