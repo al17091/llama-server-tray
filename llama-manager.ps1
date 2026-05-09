@@ -78,7 +78,7 @@ function Open-LogSnapshot {
         Write-Warning "Failed to enumerate old log snapshots: $($_.Exception.Message)"
     }
 
-    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}-{1}.log" -f (Get-Date), [System.Guid]::NewGuid().ToString("N"))
+    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}-{1}.log" -f (Get-Date), [System.Guid]::NewGuid().ToString("N").Substring(0, 8))
     $sourceStream = $null
     $snapshotStream = $null
 
