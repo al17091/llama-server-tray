@@ -67,9 +67,15 @@ function Open-LogSnapshot {
     try {
         Get-ChildItem -Path $logSnapshotDir -Filter "llama-service-*.log" -ErrorAction Stop |
             Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
-            Remove-Item -Force -ErrorAction Stop
+            ForEach-Object {
+                try {
+                    Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop
+                } catch {
+                    Write-Warning "Failed to remove old log snapshot '$($_.FullName)': $($_.Exception.Message)"
+                }
+            }
     } catch {
-        Write-Warning "Failed to clean up old log snapshots: $($_.Exception.Message)"
+        Write-Warning "Failed to enumerate old log snapshots: $($_.Exception.Message)"
     }
 
     $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}.log" -f (Get-Date))
@@ -88,6 +94,10 @@ function Open-LogSnapshot {
         if ($null -ne $sourceStream) {
             $sourceStream.Dispose()
         }
+    }
+
+    if (-not (Test-Path $snapshotPath)) {
+        throw "Log snapshot could not be created."
     }
 
     Start-Process notepad.exe "`"$snapshotPath`""
