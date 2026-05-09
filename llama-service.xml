@@ -3,10 +3,10 @@
   <name>llama-server (Local LLM)</name>
   <description>llama.cpp server background service</description>
   
-  <!-- Absolute path to the executable -->
-  <executable>C:\path\to\your\llama-server.exe</executable>
+  <!-- Absolute path to the executable (example value – change to match your environment) -->
+  <executable>D:\models\llama\llama-server.exe</executable>
   
-  <!-- Arguments: Must be written on a single line -->
+  <!-- Arguments: Must be written on a single line (example value – change model path, port, etc. to match your environment) -->
   <arguments>--model "D:\models\gguf\gemma-4-e4b-it-Q8_0.gguf" --port 11434 --n-gpu-layers 999 --ctx-size 131072 --flash-attn on --special --temp 0 --min-p 0.1 --host 0.0.0.0 --n-predict -1</arguments>
   
   <!-- Log output directory specification (Must be outside the <log> tag. %BASE% points to the folder containing this XML) -->

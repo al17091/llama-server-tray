@@ -22,8 +22,9 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 # Configuration
 $serviceName = "llama-server"
 $logDir = Join-Path $currentScriptDir "logs"
-$logFilePath = Join-Path $logDir "llama-service.out.log"
+$logFilePath = Join-Path $logDir "llama-service.err.log"
 $iconFilePath = Join-Path $currentScriptDir "icon.ico"
+$logSnapshotDir = Join-Path ([System.IO.Path]::GetTempPath()) "llama-server-tray"
 
 # Create NotifyIcon (System Tray Icon)
 $trayIcon = New-Object System.Windows.Forms.NotifyIcon
@@ -53,6 +54,55 @@ function Update-Menu {
     $btnStop.Enabled = ($svcStatus.Status -eq "Running")
 }
 
+function Open-LogSnapshot {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath
+    )
+
+    if (-not (Test-Path $logSnapshotDir)) {
+        New-Item -Path $logSnapshotDir -ItemType Directory -Force > $null
+    }
+
+    try {
+        Get-ChildItem -Path $logSnapshotDir -Filter "llama-service-*.log" -ErrorAction Stop |
+            Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
+            ForEach-Object {
+                try {
+                    Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop
+                } catch {
+                    Write-Warning "Failed to remove old log snapshot '$($_.FullName)': $($_.Exception.Message)"
+                }
+            }
+    } catch {
+        Write-Warning "Failed to enumerate old log snapshots: $($_.Exception.Message)"
+    }
+
+    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}-{1}.log" -f (Get-Date), [System.Guid]::NewGuid().ToString("N").Substring(0, 8))
+    $sourceStream = $null
+    $snapshotStream = $null
+
+    try {
+        $sourceStream = [System.IO.File]::Open($SourcePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $snapshotStream = [System.IO.File]::Open($snapshotPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+        $sourceStream.CopyTo($snapshotStream)
+    } finally {
+        if ($null -ne $snapshotStream) {
+            $snapshotStream.Dispose()
+        }
+
+        if ($null -ne $sourceStream) {
+            $sourceStream.Dispose()
+        }
+    }
+
+    if (-not (Test-Path $snapshotPath)) {
+        throw "Log snapshot could not be created at '$snapshotPath'. Check available disk space and folder permissions."
+    }
+
+    Start-Process notepad.exe "`"$snapshotPath`""
+}
+
 # Context Menu Initialization
 $contextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 
@@ -70,8 +120,11 @@ $contextMenu.Items.Add("-") > $null
 
 $btnLog = $contextMenu.Items.Add("Show Log (Notepad)", $null, { 
     if (Test-Path $logFilePath) {
-        # Wrap path in quotes to handle spaces
-        Start-Process notepad.exe "`"$logFilePath`""
+        try {
+            Open-LogSnapshot -SourcePath $logFilePath
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Unable to open the log snapshot.`n`n$($_.Exception.Message)", "Open Log Failed", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
     } else {
         [System.Windows.Forms.MessageBox]::Show("Log file not found. The server may not have been started yet.", "File Not Found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
     }

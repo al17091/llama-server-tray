@@ -28,6 +28,8 @@ After cloning or downloading this repository, please prepare the following in th
 
    * Modify `llama-service.xml` according to your environment (model path, arguments `<arguments>`, port, etc.).
 
+   > **📝 Note:** The `<executable>` and `<arguments>` values in `llama-service.xml` are **example values** specific to the author's environment. You must update them to match the actual paths on your own machine before use.
+
 ## 🚀 Installation (First Time Only!)
 
 1. Open a terminal (such as PowerShell) with Administrator privileges and navigate to this folder.
@@ -58,7 +60,7 @@ Right-click the tray icon to perform the following actions:
 
 * **Stop Server**: Stops llama-server.
 
-* **Show Log (Notepad)**: Opens the latest operation log in the `logs` folder with Notepad.
+* **Show Log (Notepad)**: Opens a temporary snapshot of `logs\llama-service.err.log` with Notepad, so it can still be viewed while the service is running.
 
 * **Quit**: Exits the manager. **(This will automatically stop the llama-server service as well.)**
 
