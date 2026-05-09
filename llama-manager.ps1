@@ -78,7 +78,7 @@ function Open-LogSnapshot {
         Write-Warning "Failed to enumerate old log snapshots: $($_.Exception.Message)"
     }
 
-    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}.log" -f (Get-Date))
+    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}-{1}.log" -f (Get-Date), [System.Guid]::NewGuid().ToString("N"))
     $sourceStream = $null
     $snapshotStream = $null
 
@@ -97,7 +97,7 @@ function Open-LogSnapshot {
     }
 
     if (-not (Test-Path $snapshotPath)) {
-        throw "Log snapshot could not be created."
+        throw "Log snapshot could not be created at '$snapshotPath'. Check available disk space and folder permissions."
     }
 
     Start-Process notepad.exe "`"$snapshotPath`""
