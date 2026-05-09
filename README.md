@@ -28,6 +28,8 @@ After cloning or downloading this repository, please prepare the following in th
 
    * Modify `llama-service.xml` according to your environment (model path, arguments `<arguments>`, port, etc.).
 
+   > **📝 Note:** The `<executable>` and `<arguments>` values in `llama-service.xml` are **example values** specific to the author's environment. You must update them to match the actual paths on your own machine before use.
+
 ## 🚀 Installation (First Time Only!)
 
 1. Open a terminal (such as PowerShell) with Administrator privileges and navigate to this folder.
