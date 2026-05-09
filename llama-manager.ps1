@@ -64,23 +64,30 @@ function Open-LogSnapshot {
         New-Item -Path $logSnapshotDir -ItemType Directory -Force > $null
     }
 
-    Get-ChildItem -Path $logSnapshotDir -Filter "llama-service-*.log" -ErrorAction SilentlyContinue |
-        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
-        Remove-Item -Force -ErrorAction SilentlyContinue
+    try {
+        Get-ChildItem -Path $logSnapshotDir -Filter "llama-service-*.log" -ErrorAction Stop |
+            Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
+            Remove-Item -Force -ErrorAction Stop
+    } catch {
+        Write-Warning "Failed to clean up old log snapshots: $($_.Exception.Message)"
+    }
 
     $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}.log" -f (Get-Date))
-    $sourceStream = [System.IO.File]::Open($SourcePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    $sourceStream = $null
+    $snapshotStream = $null
 
     try {
+        $sourceStream = [System.IO.File]::Open($SourcePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
         $snapshotStream = [System.IO.File]::Open($snapshotPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
-
-        try {
-            $sourceStream.CopyTo($snapshotStream)
-        } finally {
+        $sourceStream.CopyTo($snapshotStream)
+    } finally {
+        if ($null -ne $snapshotStream) {
             $snapshotStream.Dispose()
         }
-    } finally {
-        $sourceStream.Dispose()
+
+        if ($null -ne $sourceStream) {
+            $sourceStream.Dispose()
+        }
     }
 
     Start-Process notepad.exe "`"$snapshotPath`""
