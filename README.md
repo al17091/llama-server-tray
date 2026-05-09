@@ -58,7 +58,7 @@ Right-click the tray icon to perform the following actions:
 
 * **Stop Server**: Stops llama-server.
 
-* **Show Log (Notepad)**: Opens the latest operation log in the `logs` folder with Notepad.
+* **Show Log (Notepad)**: Opens a temporary snapshot of the latest operation log in the `logs` folder with Notepad, so it can still be viewed while the service is running.
 
 * **Quit**: Exits the manager. **(This will automatically stop the llama-server service as well.)**
 

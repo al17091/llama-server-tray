@@ -24,6 +24,7 @@ $serviceName = "llama-server"
 $logDir = Join-Path $currentScriptDir "logs"
 $logFilePath = Join-Path $logDir "llama-service.out.log"
 $iconFilePath = Join-Path $currentScriptDir "icon.ico"
+$logSnapshotDir = Join-Path ([System.IO.Path]::GetTempPath()) "llama-server-tray"
 
 # Create NotifyIcon (System Tray Icon)
 $trayIcon = New-Object System.Windows.Forms.NotifyIcon
@@ -53,6 +54,38 @@ function Update-Menu {
     $btnStop.Enabled = ($svcStatus.Status -eq "Running")
 }
 
+function Open-LogSnapshot {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath
+    )
+
+    if (-not (Test-Path $logSnapshotDir)) {
+        New-Item -Path $logSnapshotDir -ItemType Directory -Force > $null
+    }
+
+    Get-ChildItem -Path $logSnapshotDir -Filter "llama-service-*.log" -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    $snapshotPath = Join-Path $logSnapshotDir ("llama-service-{0:yyyyMMdd-HHmmssfff}.log" -f (Get-Date))
+    $sourceStream = [System.IO.File]::Open($SourcePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+
+    try {
+        $snapshotStream = [System.IO.File]::Open($snapshotPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+
+        try {
+            $sourceStream.CopyTo($snapshotStream)
+        } finally {
+            $snapshotStream.Dispose()
+        }
+    } finally {
+        $sourceStream.Dispose()
+    }
+
+    Start-Process notepad.exe "`"$snapshotPath`""
+}
+
 # Context Menu Initialization
 $contextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 
@@ -70,8 +103,11 @@ $contextMenu.Items.Add("-") > $null
 
 $btnLog = $contextMenu.Items.Add("Show Log (Notepad)", $null, { 
     if (Test-Path $logFilePath) {
-        # Wrap path in quotes to handle spaces
-        Start-Process notepad.exe "`"$logFilePath`""
+        try {
+            Open-LogSnapshot -SourcePath $logFilePath
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Unable to open the log snapshot.`n`n$($_.Exception.Message)", "Open Log Failed", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
     } else {
         [System.Windows.Forms.MessageBox]::Show("Log file not found. The server may not have been started yet.", "File Not Found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
     }
